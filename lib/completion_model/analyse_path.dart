@@ -12,7 +12,7 @@ import 'package:cli_util/cli_util.dart' as cli_util;
 import 'dart:io' as io;
 import 'dart:async';
 import 'feature_extractor.dart' as extractor;
-import 'package:smart/logging_utils.dart' as log;
+import 'package:sintr_common/logging_utils.dart' as log;
 
 String pathToSdk;
 
@@ -26,7 +26,7 @@ Future<Map> analyseFolder(String path) async {
 
   var fileMap = {};
   var inDir = new io.Directory.fromUri(new Uri.file(path));
-  for (var f in inDir.listSync(recursive: true)) {
+  for (var f in inDir.listSync(recursive: true, followLinks: false)) {
     if (f is io.File) {
       try {
         if (f.path.endsWith(".dart")) {

@@ -6,7 +6,7 @@ library smart.completion_model.feature_extractor;
 
 import 'package:analyzer/src/generated/ast.dart';
 import 'package:analyzer/src/generated/java_io.dart';
-import 'package:smart/logging_utils.dart' as log;
+import 'package:sintr_common/logging_utils.dart' as log;
 
 import 'analysis_utils.dart' as analysis_utils;
 import 'ast_extractors.dart' as extractors;
