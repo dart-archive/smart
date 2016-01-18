@@ -14,6 +14,7 @@ import 'package:sintr_common/auth.dart' as auth;
 import 'package:sintr_common/bucket_utils.dart';
 import 'package:sintr_common/configuration.dart' as config;
 import 'package:sintr_common/logging_utils.dart' as log;
+
 import 'package:smart/completion_model/analyse_path.dart';
 
 const PROJECT_NAME = "liftoff-dev";
@@ -68,6 +69,9 @@ Future processFile(AuthClient client, String projectName, String bucketName,
   String workingPath = path.join(Platform.environment["HOME"], PATH_NAME);
 
   Directory workingDirectory = new Directory(workingPath);
+  if (workingDirectory.existsSync()) {
+    workingDirectory.deleteSync(recursive: true);
+  }
   workingDirectory.createSync();
 
   var client = await auth.getAuthedClient();
