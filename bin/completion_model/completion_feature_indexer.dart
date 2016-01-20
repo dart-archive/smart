@@ -20,6 +20,7 @@ main(List<String> args) {
 
   if (args.length != 2) {
     print('Usage: completion_feature_indexer features_path out_path');
+    print("Builds the feature index for code completion");
 
     io.exit(1);
   }
@@ -57,22 +58,6 @@ main(List<String> args) {
 
   new io.File("$outPath/targetType_completionResult__count.json").writeAsStringSync(convert.JSON.encode(targetType_completionResult__count));
   new io.File("$outPath/targetType_completionResult__count.pretty").writeAsStringSync(_prettyPrint(targetType_completionResult__count));
-
-
-  new io.Directory("$outPath/targetTypeFeatures").createSync();
-  new io.Directory("$outPath/targetTypeCompletion").createSync();
-
-  for (var k in targetType_feature_completionResult_featureValue__count.keys) {
-    new io.File("$outPath/targetTypeFeatures/$k.json").writeAsStringSync(
-      convert.JSON.encode(targetType_feature_completionResult_featureValue__count[k])
-    );
-  }
-
-  for (var k in targetType_completionResult__count.keys) {
-    new io.File("$outPath/targetTypeCompletion/$k.json").writeAsStringSync(
-      convert.JSON.encode(targetType_completionResult__count[k])
-    );
-  }
 
 }
 
