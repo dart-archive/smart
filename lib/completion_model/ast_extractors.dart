@@ -8,7 +8,7 @@ import 'package:analyzer/src/generated/ast.dart' as ast;
 
 import 'ast_features.dart';
 
-const COMPLETION_RESULT = "**Completion";
+const COMPLETION_KEY_NAME = "**Completion";
 
 Map featuresFromPrefixedIdentifier(ast.PrefixedIdentifier node) {
   // TODO(lukechurch): Address the below from the completion logic:
@@ -20,7 +20,7 @@ Map featuresFromPrefixedIdentifier(ast.PrefixedIdentifier node) {
 
   if (realTarget != null) {
     var invocation = extractFeaturesForTarget(realTarget, node);
-    invocation.putIfAbsent(COMPLETION_RESULT, () => "$completion");
+    invocation.putIfAbsent(COMPLETION_KEY_NAME, () => "$completion");
     return invocation;
   }
 
@@ -33,7 +33,7 @@ Map featuresFromPropertyAccess(ast.PropertyAccess node) {
 
   if (realTarget != null) {
     var invocation = extractFeaturesForTarget(realTarget, node);
-    invocation.putIfAbsent(COMPLETION_RESULT, () => "$completion");
+    invocation.putIfAbsent(COMPLETION_KEY_NAME, () => "$completion");
     return invocation;
   }
 
@@ -46,7 +46,7 @@ Map featuresFromMethodInvocation(ast.MethodInvocation node) {
 
   if (realTarget != null) {
     var invocation = extractFeaturesForTarget(realTarget, node);
-    invocation.putIfAbsent(COMPLETION_RESULT, () => "$completion");
+    invocation.putIfAbsent(COMPLETION_KEY_NAME, () => "$completion");
     return invocation;
   }
 
