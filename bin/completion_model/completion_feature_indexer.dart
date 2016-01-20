@@ -4,6 +4,7 @@
 
 import 'dart:io' as io;
 import 'dart:convert' as convert;
+import 'package:smart/completion_model/ast_extractors.dart';
 
 //Target Type -> Feature -> Completion result -> Feature Value : Count
 Map<String, Map<String, Map<String, Map<String, int>>>> targetType_feature_completionResult_featureValue__count = {};
@@ -79,10 +80,6 @@ main(List<String> args) {
 
 
 _processJSONString(String jsonStr) {
-
-  const COMPLETION_KEY_NAME = "**Completion";
-
-
   var json = convert.JSON.decode(jsonStr);
 
   // The JSON structure looks like:
@@ -136,8 +133,6 @@ _processJSONString(String jsonStr) {
     }
   }
 }
-
-
 
 // Methods for printing the maps in a form suitable for debugging
 
