@@ -30,6 +30,11 @@ Future<Map> analyseFolder(String path) async {
     if (f is io.File) {
       try {
         if (f.path.endsWith(".dart")) {
+          if (f.path.contains(".pub") || f.path.contains("packages")) {
+            log.trace("Skipping: ${f.path} due to .pub | packages");
+            continue;
+          }
+
           log.trace("Analysing: ${f.path}");
 
           var features = analysis.analyzeSpecificFile(f.path);
@@ -37,8 +42,7 @@ Future<Map> analyseFolder(String path) async {
           fileMap[f.path] = resultsMap;
         }
       } catch (e, st) {
-        // TODO: Move this to the logging package
-        print("ERR: $e $st");
+        log.trace("ERR $e $st");
       }
     }
   }
