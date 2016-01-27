@@ -5,16 +5,21 @@
 library smart.completion_model.model;
 
 import '../completion_server/feature_server.dart';
-import 'ast_extractors.dart';
-import 'package:sintr_common/logging_utils.dart' as log;
+import '../completion_server/log_client.dart' as log_client;
 
-const ENABLE_DIAGNOSTICS = true;
+import 'dart:io' as io;
+import 'package:logging/logging.dart' as log;
+import 'ast_extractors.dart';
+
+
+const ENABLE_DIAGNOSTICS = false;
 const DISABLED_FEATURES = const [];
 
 class Model {
   int modelSwitchThreshold;
   num smoothingFactor;
   FeatureServer server;
+  log.Logger _logger;
 
   // Cache the model data
   //targetType -> feature -> completionResult -> featureValue__count
@@ -25,13 +30,15 @@ class Model {
 
   Model(String featuresPath,
       [this.modelSwitchThreshold = 3, this.smoothingFactor = 0.0000001]) {
-    log.setupLogging("smart");
-    log.trace("About to start feature server: $featuresPath");
+        _logger = new log.Logger("smart.completion_model.model");
+        log_client.bindLogServer(_logger);
+
+        _logger.info("About to start feature server: $featuresPath");
     server = FeatureServer.startFromPath(featuresPath);
   }
 
   Map<String, Map<String, num>> scoreCompletionOrder(var featureMap) {
-    log.trace("scoreCompletionOrder: $featureMap");
+    _logger.fine("scoreCompletionOrder: $featureMap");
 
     /* The probability of the completion 'toString' being accepted correlates to:
     P(completion == "toString" | context) ~=
@@ -45,28 +52,30 @@ class Model {
 
     // Get a list of completions that we've seen for this type
     var targetType = featureMap["TargetType"];
+    var serverMap = server.getFeaturesFor(targetType);
 
     if (targetType == null ||
-        server.featureMap[targetType].completionResult_count == null) {
+        serverMap == null ||
+        serverMap.completionResult_count == null) {
+      _logger.info("Type not seen before: $targetType, "
+          "${serverMap == null} "
+          "${serverMap.completionResult_count == null}");
+
       // We've never seen this type before, this simple model should just
       // return a uniform model
       return null;
     }
 
-    List<String> seenCompletions =
-        server.featureMap[targetType].completionResult_count.keys.toList();
+    var completionResultsMap = serverMap.completionResult_count;
 
-    num totalSeenCount =
-        server.featureMap[targetType].completionResult_count.values.reduce(sum);
+    List<String> seenCompletions = completionResultsMap.keys.toList();
+    num totalSeenCount = completionResultsMap.values.reduce(sum);
 
     for (String completion in seenCompletions) {
       completionScores.putIfAbsent(completion, () => {});
 
       // Compute P(c == completion)
-      num pCompletion = server.featureMap[targetType].completionResult_count[
-              completion] /
-          totalSeenCount;
-
+      num pCompletion = completionResultsMap[completion] / totalSeenCount;
       completionScores[completion]["pCompletion"] = pCompletion;
 
       num pFeatures = 1;
@@ -78,15 +87,21 @@ class Model {
         // Skip any features that are disabled in the model
         if (DISABLED_FEATURES.contains(featureName)) continue;
 
-        // Lookup the value for this feature for query
+        // Lookup the value for this feature for completion query
         var featureValue = "${featureMap[featureName]}";
 
         // targetType -> feature -> completionResult -> featureValue :: count
         // Lookup this value in the main model
-        Map<dynamic, num> featureValue__count = server.featureMap[targetType]
-                .featureName_completionResult_featureValue_count[featureName]
-            [completion];
-        assert(featureValue__count != null);
+        Map<dynamic, num> featureValue__count =
+            serverMap.featureName_completionResult_featureValue_count[
+                featureName][completion];
+
+        // For the given [completion] the counts of the feature values are now
+        // in featureValue__count
+
+        // If this is null, it's because this part of the model has been pruned
+        // We can simulate this by creating an empty map
+        if (featureValue__count == null) featureValue__count = {};
 
         // Compute the total for this feature value
         num totalForThisValue = featureValue__count.values.reduce(sum);
@@ -103,9 +118,9 @@ class Model {
           if (smoothedValueCount < modelSwitchThreshold) {
             // Use 'unseen estimator'
             pFeature = (smoothedValueCount / totalSeenCount);
-                // Mark the features with an unseen case estimator
-            featureLookup = featureLookup +
-                " U_$smoothedValueCount/$totalSeenCount";
+            // Mark the features with an unseen case estimator
+            featureLookup =
+                featureLookup + " U_$smoothedValueCount/$totalSeenCount";
           } else {
             pFeature = (smoothedValueCount / totalForThisValue);
             featureLookup =
@@ -117,21 +132,21 @@ class Model {
           featureLookup = featureLookup + " X_$smoothingFactor/$totalSeenCount";
 
           if (ENABLE_DIAGNOSTICS) {
-            log.debug("");
+            _logger.finest("");
 
-            log.debug(" === Query === ");
-            log.debug("featureName: $featureName featureValue: $featureValue");
+            _logger.finest(" === Query === ");
+            _logger.finest("featureName: $featureName featureValue: $featureValue");
 
-            log.debug(" === Total Seen Count === ");
-            log.debug("$totalSeenCount");
-            log.debug(" === Map === ");
-            log.debug("$featureValue__count");
-            log.debug(" === containsKey === ");
-            log.debug("${featureValue__count.containsKey(featureValue)}");
-            log.debug(" === key type === ");
-            log.debug("${featureValue.runtimeType}");
-            log.debug(" === End ===");
-            log.debug("");
+            _logger.finest(" === Total Seen Count === ");
+            _logger.finest("$totalSeenCount");
+            _logger.finest(" === Map === ");
+            _logger.finest("$featureValue__count");
+            _logger.finest(" === containsKey === ");
+            _logger.finest("${featureValue__count.containsKey(featureValue)}");
+            _logger.finest(" === key type === ");
+            _logger.finest("${featureValue.runtimeType}");
+            _logger.finest(" === End ===");
+            _logger.finest("");
           }
         }
 
