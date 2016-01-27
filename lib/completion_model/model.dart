@@ -6,30 +6,20 @@ library smart.completion_model.model;
 
 import '../completion_server/feature_server.dart';
 import '../completion_server/log_client.dart' as log_client;
+
+import 'dart:io' as io;
+import 'package:logging/logging.dart' as log;
 import 'ast_extractors.dart';
+
 
 const ENABLE_DIAGNOSTICS = false;
 const DISABLED_FEATURES = const [];
-
-class log {
-  static String _name;
-  static setupLogging(String name) {_name = name;}
-  static trace(String l) => _log("TRACE: $l");
-  static info(String l) => _log("INFO: $l");
-  static debug(String l) => _log("DEBUG $l");
-
-  static _log(String l) {
-    // new io.File(io.Platform.environment["HOME"] + "/logs/model.log").writeAsStringSync(
-    //   "${new DateTime.now().toIso8601String()}: ${_name} $l \n", mode: io.FileMode.APPEND);
-
-    log_client.info(_name, l);
-  }
-}
 
 class Model {
   int modelSwitchThreshold;
   num smoothingFactor;
   FeatureServer server;
+  log.Logger _logger;
 
   // Cache the model data
   //targetType -> feature -> completionResult -> featureValue__count
@@ -40,13 +30,15 @@ class Model {
 
   Model(String featuresPath,
       [this.modelSwitchThreshold = 3, this.smoothingFactor = 0.0000001]) {
-    log.setupLogging("smart_completion_order");
-    log.trace("About to start feature server: $featuresPath");
+        _logger = new log.Logger("smart.completion_model.model");
+        log_client.bindLogServer(_logger);
+
+        _logger.info("About to start feature server: $featuresPath");
     server = FeatureServer.startFromPath(featuresPath);
   }
 
   Map<String, Map<String, num>> scoreCompletionOrder(var featureMap) {
-    log.trace("scoreCompletionOrder: $featureMap");
+    _logger.fine("scoreCompletionOrder: $featureMap");
 
     /* The probability of the completion 'toString' being accepted correlates to:
     P(completion == "toString" | context) ~=
@@ -62,9 +54,10 @@ class Model {
     var targetType = featureMap["TargetType"];
     var serverMap = server.getFeaturesFor(targetType);
 
-    if (targetType == null || serverMap == null ||
+    if (targetType == null ||
+        serverMap == null ||
         serverMap.completionResult_count == null) {
-          log.info("Type not seen before: $targetType, "
+      _logger.info("Type not seen before: $targetType, "
           "${serverMap == null} "
           "${serverMap.completionResult_count == null}");
 
@@ -99,8 +92,9 @@ class Model {
 
         // targetType -> feature -> completionResult -> featureValue :: count
         // Lookup this value in the main model
-        Map<dynamic, num> featureValue__count = serverMap.
-          featureName_completionResult_featureValue_count[featureName][completion];
+        Map<dynamic, num> featureValue__count =
+            serverMap.featureName_completionResult_featureValue_count[
+                featureName][completion];
 
         // For the given [completion] the counts of the feature values are now
         // in featureValue__count
@@ -124,9 +118,9 @@ class Model {
           if (smoothedValueCount < modelSwitchThreshold) {
             // Use 'unseen estimator'
             pFeature = (smoothedValueCount / totalSeenCount);
-                // Mark the features with an unseen case estimator
-            featureLookup = featureLookup +
-                " U_$smoothedValueCount/$totalSeenCount";
+            // Mark the features with an unseen case estimator
+            featureLookup =
+                featureLookup + " U_$smoothedValueCount/$totalSeenCount";
           } else {
             pFeature = (smoothedValueCount / totalForThisValue);
             featureLookup =
@@ -138,21 +132,21 @@ class Model {
           featureLookup = featureLookup + " X_$smoothingFactor/$totalSeenCount";
 
           if (ENABLE_DIAGNOSTICS) {
-            log.debug("");
+            _logger.finest("");
 
-            log.debug(" === Query === ");
-            log.debug("featureName: $featureName featureValue: $featureValue");
+            _logger.finest(" === Query === ");
+            _logger.finest("featureName: $featureName featureValue: $featureValue");
 
-            log.debug(" === Total Seen Count === ");
-            log.debug("$totalSeenCount");
-            log.debug(" === Map === ");
-            log.debug("$featureValue__count");
-            log.debug(" === containsKey === ");
-            log.debug("${featureValue__count.containsKey(featureValue)}");
-            log.debug(" === key type === ");
-            log.debug("${featureValue.runtimeType}");
-            log.debug(" === End ===");
-            log.debug("");
+            _logger.finest(" === Total Seen Count === ");
+            _logger.finest("$totalSeenCount");
+            _logger.finest(" === Map === ");
+            _logger.finest("$featureValue__count");
+            _logger.finest(" === containsKey === ");
+            _logger.finest("${featureValue__count.containsKey(featureValue)}");
+            _logger.finest(" === key type === ");
+            _logger.finest("${featureValue.runtimeType}");
+            _logger.finest(" === End ===");
+            _logger.finest("");
           }
         }
 

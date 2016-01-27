@@ -4,39 +4,49 @@
 
 library smart.completion_server.log_client;
 
-import 'dart:io';
+import 'dart:io' as io;
 import 'dart:async';
+import 'package:logging/logging.dart' as logging;
 
-enum LogTarget {
-  LOG_SERVER,
-  STDOUT
+void bindLogServer(logging.Logger logger, {target : LogTarget.LOG_SERVER}) {
+  logger.onRecord.listen((logItem) {
+    _record("${logItem.level}", logItem.sequenceNumber, logItem.loggerName,
+        logItem.message, target);
+  });
 }
+
+enum LogTarget { LOG_SERVER, STDOUT }
 
 // Log test driver
 main(List<String> args) async {
-  print ("Log test driver, pushes data to the local log server");
+  logging.Logger logger = new logging.Logger("Test");
+  bindLogServer(logger);
+
+  print("Log test driver, pushes data to the local log server");
   while (true) {
-    await info("test", "=====================================");
+    logger.info("=====================================");
     await new Future.delayed(new Duration(milliseconds: 5000));
   }
 }
 
-const LogTarget TARGET = LogTarget.LOG_SERVER;
 const int LOG_SERVER_PORT = 9991;
 
-Future info(String srcName, String logItem) async {
-  String logLine = "${new DateTime.now().toIso8601String()}: $srcName: $logItem";
-  switch (TARGET) {
+Future _record(String level, int seqNumber, String srcName, String logItem,
+    LogTarget _target) async {
+  String logLine =
+      "$seqNumber ${new DateTime.now().toIso8601String()}: $srcName: $logItem";
+  switch (_target) {
     case LogTarget.STDOUT:
-      print (logLine);
+      print(logLine);
       break;
     case LogTarget.LOG_SERVER:
-      return new HttpClient().post(
-        InternetAddress.LOOPBACK_IP_V4.host, LOG_SERVER_PORT, '/').then((req) {
-          req.write(logLine);
-          return req.flush().then((_) {
-            return req.close();
-          });
+      return new io.HttpClient()
+          .post(io.InternetAddress.LOOPBACK_IP_V4.host, LOG_SERVER_PORT, '/')
+          .then((req) {
+        req.write(logLine);
+        return req.flush().then((_) {
+          return req.close();
         });
+      });
   }
 }
