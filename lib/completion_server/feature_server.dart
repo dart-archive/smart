@@ -11,29 +11,138 @@ import 'package:logging/logging.dart' as log;
 
 import 'log_client.dart' as log_client;
 
+class CompletionResultMap {
+  // Completion Result -> Feature Value -> Count
+  Map<String, FeatureValueMap> _featureValueMap = {};
+
+  List<String> getCompletions() => _featureValueMap.keys.toList();
+  FeatureValueMap getFeatureValueforCompletion(String completion) {
+    return _featureValueMap[completion];
+  }
+
+  CompletionResultMap(Map<String, Map<dynamic, int>> completion_featureValue__count) {
+    for (String completionResult in completion_featureValue__count.keys) {
+      _featureValueMap[completionResult] = new FeatureValueMap(
+        completion_featureValue__count[completionResult]
+      );
+    }
+  }
+}
+
+
+
+class FeatureValueMap {
+  static List<List> _sharedIndecies = [];
+  static List<int> _indeciesUsages = [];
+  int MAX_UNSHARED_SIZE = 25;
+
+
+  List _valuesIndex = null;
+  List<int> _count = null;
+
+  List values() => _valuesIndex;
+  int countForValue(var value) {
+    int index = _valuesIndex.indexOf(value);
+    if (index == -1) return null;
+    return _count[index];
+  }
+
+  FeatureValueMap(Map<dynamic, int> countMap) {
+    var keysList = countMap.keys.toList(growable: false);
+    for (int i = 0; i < _sharedIndecies.length; i++) {
+      List existingIndex = _sharedIndecies[i];
+      if (existingIndex.length == keysList.length &&
+        keysList.every((e) => existingIndex.contains(e))) {
+          _valuesIndex = existingIndex;
+          _indeciesUsages[i]++;
+          break;
+      }
+    }
+
+    if (_valuesIndex == null) {
+      _valuesIndex = keysList;
+      _sharedIndecies.add(_valuesIndex);
+      _indeciesUsages.add(1);
+
+      if (_indeciesUsages.where((i) => i == 1).length > MAX_UNSHARED_SIZE) {
+        int indexToRemove;
+        for (int i = 0; i < _indeciesUsages.length; i++) {
+          if (_indeciesUsages[i] == 1) {
+            indexToRemove = i;
+            break;
+          }
+        }
+
+        if (indexToRemove != null) {
+          assert (_indeciesUsages[indexToRemove] == 1);
+          _sharedIndecies.removeAt(indexToRemove);
+          _indeciesUsages.removeAt(indexToRemove);
+        }
+      }
+
+      print (_indeciesUsages);
+    }
+
+    _count = new List<int>(keysList.length);
+
+    for (var k in keysList) {
+      _count[_valuesIndex.indexOf(k)] = countMap[k];
+      }
+  }
+}
+
+class FeatureNamesMap {
+  List<String> _featureNames = [];
+  List<CompletionResultMap> _resultMap = [];
+
+  CompletionResultMap getCompletionMapForFeature(String featureName) {
+    int index = _featureNames.indexOf(featureName);
+    if (index == -1) return null;
+    return _resultMap[index];
+  }
+  List<String> getFeatureNames() => _featureNames.toList();
+
+  FeatureNamesMap(Map<String, Map<String, Map<dynamic, int>>>
+    featureName_completionResult_featureValue_count) {
+    for (String featureName in featureName_completionResult_featureValue_count.keys) {
+      _featureNames.add(featureName);
+      _resultMap.add(new CompletionResultMap(
+        featureName_completionResult_featureValue_count[featureName]));
+    }
+  }
+}
+
+
 class FeaturesForType {
   String targetType;
+  FeatureNamesMap featureNamesMap;
+
 
   // Note that the breaking of Dart standard variable naming is intentional
 
-  //targetType -> featureName -> completionResult -> featureValue__count
-  Map<String, Map<String, Map<dynamic, num>>>
-    featureName_completionResult_featureValue_count = {};
+  //featureName -> completionResult -> featureValue__count
+  // Map<String, Map<String, Map<dynamic, num>>>
+  //   featureName_completionResult_featureValue_count = {};
 
-  //targetType -> completionResult -> count
+  //completionResult -> count
   Map<String, num> completionResult_count = {};
 
-  FeaturesForType(this.featureName_completionResult_featureValue_count,
-      this.completionResult_count);
+  FeaturesForType(featureName_completionResult_featureValue_count,
+      completionResult_count) {
+        this.completionResult_count = completionResult_count;
 
-  toJSON() {
-    return JSON.encode({
-      "targetType": targetType,
-      "featureName_completionResult_featureValue_count":
-          featureName_completionResult_featureValue_count,
-      "completionResult_count": completionResult_count
-    });
-  }
+        featureNamesMap =
+          new FeatureNamesMap(featureName_completionResult_featureValue_count);
+      }
+
+  // toJSON() {
+  //   return JSON.encode({
+  //     "targetType": targetType,
+  //     "featureName_completionResult_featureValue_count":
+  //         featureName_completionResult_featureValue_count,
+  //     "completionResult_count": completionResult_count
+  //   });
+  // }
 }
 
 class FeatureServer {
@@ -73,7 +182,7 @@ class FeatureServer {
 
   static FeatureServer startFromPath(String basePath) {
     _logger = new log.Logger("feature_server");
-    log_client.bindLogServer(_logger);
+    log_client.bindLogServer(_logger, target: log_client.LogTarget.STDOUT);
 
     _logger.fine("feature_server: startFromPath:", basePath);
     Stopwatch sw = new Stopwatch()..start();
