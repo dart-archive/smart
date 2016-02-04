@@ -9,17 +9,8 @@ import 'package:analyzer/src/generated/java_io.dart';
 import 'package:sintr_common/logging_utils.dart' as log;
 
 import '../analysis_utils/analysis_utils.dart' as analysis_utils;
-// import 'ast_extractors.dart' as extractors;
-
-
 
 import '../analysis_utils/type_utils.dart';
-
-/// Extract features for an ast construct with a target
-// Map extractFeaturesForTarget(ast.Expression realTarget, ast.AstNode node) {
-//   var bestType = realTarget.bestType;
-//   String targetTypeName = TypeUtils.qualifiedName(bestType.element);
-
 
 // TODO(luekchurch): Refactor this so it shares an implementation with the
 // completion_perf driver
@@ -53,9 +44,7 @@ class FeatureExtractor extends GeneralizingAstVisitor {
 
   @override
   visitSimpleIdentifier(SimpleIdentifier node) {
-    features.add({
-      "TypeUsage" : TypeUtils.qualifiedName(node.bestType.element)
-    });
+    features.add({"TypeUsage": TypeUtils.qualifiedName(node.bestType.element)});
     return super.visitNode(node);
   }
 }
