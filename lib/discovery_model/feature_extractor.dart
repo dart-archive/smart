@@ -1,16 +1,16 @@
-// Copyright (c) 2015, the Dart project authors. Please see the AUTHORS file
+// Copyright (c) 2016, the Dart project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE.md file.
 
-library smart.completion_model.feature_extractor;
+library smart.discovery_model.feature_extractor;
 
 import 'package:analyzer/src/generated/ast.dart';
 import 'package:analyzer/src/generated/java_io.dart';
 import 'package:sintr_common/logging_utils.dart' as log;
 
 import '../analysis_utils/analysis_utils.dart' as analysis_utils;
-import 'ast_extractors.dart' as extractors;
 
+import '../analysis_utils/type_utils.dart';
 
 // TODO(luekchurch): Refactor this so it shares an implementation with the
 // completion_perf driver
@@ -43,23 +43,8 @@ class FeatureExtractor extends GeneralizingAstVisitor {
   var features = [];
 
   @override
-  visitPrefixedIdentifier(PrefixedIdentifier node) {
-    Map featuresMap = extractors.featuresFromPrefixedIdentifier(node);
-    features.add(featuresMap);
-    return super.visitNode(node);
-  }
-
-  @override
-  visitPropertyAccess(PropertyAccess node) {
-    Map featuresMap = extractors.featuresFromPropertyAccess(node);
-    features.add(featuresMap);
-    return super.visitNode(node);
-  }
-
-  @override
-  visitMethodInvocation(MethodInvocation node) {
-    Map featuresMap = extractors.featuresFromMethodInvocation(node);
-    features.add(featuresMap);
+  visitSimpleIdentifier(SimpleIdentifier node) {
+    features.add({"TypeUsage": TypeUtils.qualifiedName(node.bestType.element)});
     return super.visitNode(node);
   }
 }

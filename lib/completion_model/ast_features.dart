@@ -5,7 +5,7 @@
 library smart.completion_model.ast_features;
 
 import 'package:analyzer/src/generated/ast.dart' as ast;
-import 'type_utils.dart';
+import '../analysis_utils/type_utils.dart';
 
 /// Extract features for an ast construct with a target
 Map extractFeaturesForTarget(ast.Expression realTarget, ast.AstNode node) {
