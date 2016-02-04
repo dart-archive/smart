@@ -14,7 +14,19 @@ main(List<String> args) async {
 
   print ("Model loaded in: ${sw.elapsedMilliseconds}");
 
-  for (int i = 0; i < 1000; i++) {
-    await new Future.delayed(new Duration(seconds: 10));
-  }
+  featureServer.exportToPackedFormat(args[0]);
+
+  print ("Model exported in: ${sw.elapsedMilliseconds}");
+
+  //
+  // print ("Starting");
+  //
+  // var featureServer = server.FeatureServer.startFromPackedPath(args[0]);
+  //
+  // print ("Model exported in: ${sw.elapsedMilliseconds}");
+
+
+  // for (int i = 0; i < 1000; i++) {
+  //   await new Future.delayed(new Duration(seconds: 10));
+  // }
 }
