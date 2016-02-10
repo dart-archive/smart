@@ -24,6 +24,10 @@ main(List<String> args) {
     var data = JSON.decode(f.readAsStringSync());
     for (var dataPath in data['result'].keys) {
 
+      // TODO: This form of path mangling should be replaced with something
+      // that reads the input field of the results to give a stable mapping
+      // to their source
+
       var fileName =
         f.path.split("2016-01").last + dataPath.split("data_working").last;
       var discoveryFeatures = data['result'][dataPath]['discovery_features'];
