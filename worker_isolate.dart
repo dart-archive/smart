@@ -130,10 +130,12 @@ Future processFile(AuthClient client, String projectName, String bucketName,
   var discoveryResults = await discovery_model.analyseFolder(workingDirectory.path);
 
   var results = {};
-  results.addAll(completionResults);
-  results.addAll(discoveryResults);
-
-  // var results = [workingDirectory.path];
+  for (var fileKey in completionResults.keys) {
+    results.putIfAbsent(fileKey, () => {}).addAll(completionResults[fileKey]);
+  }
+  for (var fileKey in discoveryResults.keys) {
+    results.putIfAbsent(fileKey, () => {}).addAll(discoveryResults[fileKey]);
+  }
 
   log.info("Cleaning up");
   log.info("Deleting working directory");
