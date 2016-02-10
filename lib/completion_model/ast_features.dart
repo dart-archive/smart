@@ -19,8 +19,57 @@ Map extractFeaturesForTarget(ast.Expression realTarget, ast.AstNode node) {
     "TargetRuntimeType": "${realTarget.runtimeType}",
   };
   featuresAccumlator.addAll(featuresFromTarget);
+  _HaltingExtractor previousExtractor = new _HaltingExtractor(node.offset);
+  node.root.accept(previousExtractor);
+  featuresAccumlator.addAll(
+    extractFeaturesFromPreviousElements(previousExtractor, realTarget));
+
   return featuresAccumlator;
 }
+
+Map extractFeaturesFromPreviousElements(
+  _HaltingExtractor previousExtractor,
+  ast.Expression realTarget) {
+
+    var previousAll = previousExtractor.computeDerviedLists();
+    var filteredForTargets =
+      previousExtractor.getForTargetName(previousAll, "$realTarget");
+    // print (filteredForTargets);
+    var completionsForTargets =
+      previousExtractor.getCompletionsFromAstNodes(filteredForTargets).reversed.toList();
+
+
+    var bestType = realTarget.bestType;
+    String targetTypeName = TypeUtils.qualifiedName(bestType.element);
+    var filteredForTargetType =
+      previousExtractor.getForTargetType(previousAll, "$targetTypeName");
+    var completionsForTargetType =
+      previousExtractor.getCompletionsFromAstNodes(filteredForTargetType).reversed.toList();
+      // print (completionsForTargetType);
+
+
+    int completionForTargetsLength = completionsForTargets.length;
+    int completionsForTargetTypeLength = completionsForTargetType.length;
+
+
+    var features = {
+      "completionsForTargets-n1" :
+        completionForTargetsLength >= 1 ? completionsForTargets[0] : null,
+      "completionsForTargets-n2" :
+        completionForTargetsLength >= 2 ? completionsForTargets[1] : null,
+      "completionsForTargets-n3" :
+        completionForTargetsLength >= 3 ? completionsForTargets[2] : null,
+
+      "completionsForTargetType-n1" :
+        completionsForTargetTypeLength >= 1 ? completionsForTargetType[0] : null,
+      "completionsForTargetType-n2" :
+        completionsForTargetTypeLength >= 2 ? completionsForTargetType[1] : null,
+      "completionsForTargetType-n3" :
+        completionsForTargetTypeLength >= 3 ? completionsForTargetType[2] : null,
+    };
+
+    return features;
+  }
 
 /// Extract features that apply to all AstNodes
 Map extractFeaturesForNode(ast.AstNode node) {
@@ -159,4 +208,100 @@ String _assignmentType(ast.AstNode node) {
   // We can only use the static type here to prevent accidentally cheating
   // and reading from the future.
   return assignment.leftHandSide.staticType.name;
+}
+
+
+
+
+/// An extractor that stops at a given offset
+class _HaltingExtractor extends ast.GeneralizingAstVisitor {
+  List<ast.SimpleIdentifier> sis = [];
+  List<ast.MethodInvocation> mis = [];
+  List<ast.PropertyAccess> pas = [];
+  List<ast.PrefixedIdentifier> pis = [];
+
+  List<ast.AstNode> all;
+
+  int haltingOffset;
+
+  _HaltingExtractor(this.haltingOffset);
+
+  @override
+  visitSimpleIdentifier(ast.SimpleIdentifier node) {
+    if (node.offset >= haltingOffset) return;
+    sis.add(node);
+    super.visitNode(node);
+  }
+
+  @override
+  visitMethodInvocation(ast.MethodInvocation mi) {
+    if (mi.offset >= haltingOffset) return;
+    mis.add(mi);
+    super.visitNode(mi);
+  }
+
+  @override
+  visitPropertyAccess(ast.PropertyAccess pa) {
+    if (pa.offset >= haltingOffset) return;
+    pas.add(pa);
+    super.visitNode(pa);
+  }
+
+  @override
+  visitPrefixedIdentifier(ast.PrefixedIdentifier pi) {
+    if (pi.offset >= haltingOffset) return;
+    pis.add(pi);
+    super.visitNode(pi);
+  }
+
+  List<ast.AstNode> computeDerviedLists() {
+    all = [];
+    all..addAll(sis)..addAll(mis)..addAll(pas)..addAll(pis);
+    all.sort((a, b) => a.offset.compareTo(b.offset));
+    return all;
+  }
+
+  List<ast.AstNode> getForTargetName(Iterable<ast.AstNode> nodes, String name) {
+    List<ast.AstNode> ret = [];
+    for (ast.AstNode node in nodes) {
+      if (node is ast.PrefixedIdentifier && "${node.prefix}" == name) {
+        ret.add(node);
+      } else if (node is ast.PropertyAccess && "${node.realTarget}" == name) {
+        ret.add(node);
+      } else if (node is ast.MethodInvocation && "${node.realTarget}" == name) {
+        ret.add(node);
+      }
+    }
+    return ret;
+  }
+
+  List<ast.AstNode> getForTargetType(Iterable<ast.AstNode> nodes, String typeName) {
+    List<ast.AstNode> ret = [];
+    for (ast.AstNode node in nodes) {
+      if (node is ast.PrefixedIdentifier && "${TypeUtils.qualifiedName(node.prefix?.bestType?.element)}" == typeName) {
+        ret.add(node);
+      } else if (node is ast.PropertyAccess &&
+          "${TypeUtils.qualifiedName(node.realTarget?.bestType?.element)}" == typeName) {
+        ret.add(node);
+      } else if (node is ast.MethodInvocation &&
+          "${TypeUtils.qualifiedName(node.realTarget?.bestType?.element)}" == typeName) {
+        ret.add(node);
+      }
+    }
+    return ret;
+  }
+
+  List<String> getCompletionsFromAstNodes(Iterable<ast.AstNode> nodes) {
+    List<String> completions = [];
+    for (ast.AstNode node in nodes) {
+      if (node is ast.PrefixedIdentifier) {
+        completions.add("${node.identifier}");
+      } else if (node is ast.PropertyAccess) {
+        completions.add("${node.propertyName}");
+      } else if (node is ast.MethodInvocation) {
+        completions.add("${node.methodName}");
+      }
+    }
+    return completions;
+  }
 }
