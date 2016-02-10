@@ -15,7 +15,9 @@ import 'package:sintr_common/bucket_utils.dart';
 import 'package:sintr_common/configuration.dart' as config;
 import 'package:sintr_common/logging_utils.dart' as log;
 
-import 'package:smart/completion_model/analyse_path.dart';
+import 'package:smart/completion_model/analyse_path.dart' as completion_model;
+import 'package:smart/discovery_model/analyse_path.dart' as discovery_model;
+
 
 const PROJECT_NAME = "liftoff-dev";
 const PATH_NAME = "data_working";
@@ -124,8 +126,16 @@ Future processFile(AuthClient client, String projectName, String bucketName,
 
   log.info("About to analyse folder: ${workingDirectory.path}");
 
-  var results = await analyseFolder(workingDirectory.path);
-  // var results = [workingDirectory.path];
+  var completionResults = await completion_model.analyseFolder(workingDirectory.path);
+  var discoveryResults = await discovery_model.analyseFolder(workingDirectory.path);
+
+  var results = {};
+  for (var fileKey in completionResults.keys) {
+    results.putIfAbsent(fileKey, () => {}).addAll(completionResults[fileKey]);
+  }
+  for (var fileKey in discoveryResults.keys) {
+    results.putIfAbsent(fileKey, () => {}).addAll(discoveryResults[fileKey]);
+  }
 
   log.info("Cleaning up");
   log.info("Deleting working directory");
