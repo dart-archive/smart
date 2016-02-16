@@ -6,58 +6,52 @@ library smart.completion_model.ast_features;
 
 import 'package:analyzer/src/generated/ast.dart' as ast;
 import '../analysis_utils/type_utils.dart';
+import 'feature_vector.dart' as features;
 
 /// Extract features for an ast construct with a target
-Map extractFeaturesForTarget(ast.Expression realTarget, ast.AstNode node) {
-  var bestType = realTarget.bestType;
-  String targetTypeName = TypeUtils.qualifiedName(bestType.element);
+features.FeatureVector extractFeaturesForTarget(ast.Expression realTarget, ast.AstNode node) {
+  var vector = new features.FeatureVector();
 
-  Map featuresAccumlator = extractFeaturesForNode(node);
-  Map featuresFromTarget = {
-    "TargetType": "$targetTypeName",
-    "TargetName": "${realTarget}",
-    "TargetRuntimeType": "${realTarget.runtimeType}",
-  };
-  featuresAccumlator.addAll(featuresFromTarget);
-  return featuresAccumlator;
+  var bestType = realTarget.bestType;
+  vector.targetType = TypeUtils.qualifiedName(bestType.element);
+  _extractFeaturesForNode(node, vector);
+
+  return vector;
 }
 
 /// Extract features that apply to all AstNodes
-Map extractFeaturesForNode(ast.AstNode node) {
-  var features = {
-    "InClass": _inClass(node),
-    "InMethod": _inMethod(node),
-    "InFunction": _inFunction(node),
-    "InFunctionStatement": _inFunctionStatement(node),
-    "InTry": _inTry(node),
-    "InCatch": _inCatch(node),
-    "InICE": _inICE(node),
-    "InFormalParam": _inFormalParameter(node),
-    "InAssignment": _inAssignment(node),
-    "InConditional": _inConditionalExpression(node),
-    "InForEachLoop": _inForEachLoop(node),
-    "InForLoop": _inForLoop(node),
-    "InWhileLoop": _inWhileLoop(node),
-    "InReturnStatement": _inReturnStatement(node),
-    "InStringInterpolation": _inStringInterpolation(node),
-    "InStaticMethod": _inStaticMethod(node),
-    "InAsyncMethod": _inAsyncMethod(node),
-    "InSyncMethod": _inSyncMethod(node),
-    "InGeneratorMethod": _inGeneratorMethod(node),
-    "InAssertStatement": _inAssertStatement(node),
-    "InAwaitExpression": _inAwaitExpression(node),
-    "InTestMethodInvocation": _insideInvocationStartsWith(node, "test"),
-    "InDescribeMethodInvocation": _insideInvocationStartsWith(node, "describe"),
-    "InMainMethodDeclaration": _insideDeclarationStartsWith(node, "main"),
-    "InTestMethodDeclaration": _insideDeclarationStartsWith(node, "test"),
-    "InDeclarationWithSet": _insideDeclarationStartsWith(node, "set"),
-    "InDeclarationWithGet": _insideDeclarationStartsWith(node, "get"),
-    "InDeclarationWithHas": _insideDeclarationStartsWith(node, "has"),
-    "InDeclarationWithIs": _insideDeclarationStartsWith(node, "is"),
-    "assigmmentLHSStaticType": _assignmentType(node)
-  };
+_extractFeaturesForNode(ast.AstNode node, features.FeatureVector vector) {
+  vector.setValue(features.IN_CLASS_NAME, _inClass(node));
+  vector.setValue(features.IN_METHOD_NAME, _inMethod(node));
+  vector.setValue(features.IN_FUNCTION_NAME, _inFunction(node));
+  vector.setValue(features.IN_FUNCTION_STATEMENT_NAME, _inFunctionStatement(node));
+  vector.setValue(features.IN_TRY_NAME, _inTry(node));
+  vector.setValue(features.IN_CATCH_NAME, _inCatch(node));
+  vector.setValue(features.IN_ICE_NAME, _inICE(node));
+  vector.setValue(features.IN_FORMAL_PARAM_NAME, _inFormalParameter(node));
+  vector.setValue(features.IN_ASSIGN_NAME, _inAssignment(node));
+  vector.setValue(features.IN_COND_NAME, _inConditionalExpression(node));
+  vector.setValue(features.IN_FOREACH_NAME, _inForEachLoop(node));
+  vector.setValue(features.IN_FOR_NAME, _inForLoop(node));
+  vector.setValue(features.IN_WHILE_NAME, _inWhileLoop(node));
+  vector.setValue(features.IN_RETURN_NAME, _inReturnStatement(node));
+  vector.setValue(features.IN_STRING_INTERPOL_NAME, _inStringInterpolation(node));
+  vector.setValue(features.IN_STATIC_NAME, _inStaticMethod(node));
+  vector.setValue(features.IN_ASYNC_NAME, _inAsyncMethod(node));
+  vector.setValue(features.IN_SYNC_NAME, _inSyncMethod(node));
+  vector.setValue(features.IN_GENERATOR_NAME, _inGeneratorMethod(node));
+  vector.setValue(features.IN_ASSRT_NAME, _inAssertStatement(node));
+  vector.setValue(features.IN_AWAIT_NAME, _inAwaitExpression(node));
+  vector.setValue(features.IN_TEST_INVOCATION_NAME, _insideInvocationStartsWith(node, "test"));
+  vector.setValue(features.IN_DESCRIBE_NAME, _insideInvocationStartsWith(node, "describe"));
+  vector.setValue(features.IN_MAIN_NAME, _insideDeclarationStartsWith(node, "main"));
+  vector.setValue(features.IN_TEST_METHOD_NAME, _insideDeclarationStartsWith(node, "test"));
+  vector.setValue(features.IN_DECLARATION_WITH_SET_NAME, _insideDeclarationStartsWith(node, "set"));
+  vector.setValue(features.IN_DECLARATION_WITH_GET_NAME, _insideDeclarationStartsWith(node, "get"));
+  vector.setValue(features.IN_DECLARATION_WITH_HAS_NAME, _insideDeclarationStartsWith(node, "has"));
+  vector.setValue(features.IN_DECLARATION_WITH_IS_NAME, _insideDeclarationStartsWith(node, "is"));
+  vector.setValue(features.ASSIGNMENT_LHS_STATIC, _assignmentType(node));
 
-  return features;
 }
 
 // Helper methods, once we're confident that these are sampling the

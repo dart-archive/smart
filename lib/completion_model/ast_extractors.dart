@@ -2,15 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE.md file.
 
+/// This provides helpers for systematically extracting the structures used
+/// for completion from the different ASTs
 library smart.completion_models.ast_extractors;
 
 import 'package:analyzer/src/generated/ast.dart' as ast;
 
 import 'ast_features.dart';
+import 'feature_vector.dart';
 
-const COMPLETION_KEY_NAME = "**Completion";
-
-Map featuresFromPrefixedIdentifier(ast.PrefixedIdentifier node) {
+FeatureVector featuresFromPrefixedIdentifier(ast.PrefixedIdentifier node) {
   // TODO(lukechurch): Address the below from the completion logic:
   // "some PrefixedIdentifier nodes are transformed into
   // ConstructorName nodes during the resolution process."
@@ -20,33 +21,33 @@ Map featuresFromPrefixedIdentifier(ast.PrefixedIdentifier node) {
 
   if (realTarget != null) {
     var invocation = extractFeaturesForTarget(realTarget, node);
-    invocation.putIfAbsent(COMPLETION_KEY_NAME, () => "$completion");
+    invocation.completion = completion;
     return invocation;
   }
 
   return null;
 }
 
-Map featuresFromPropertyAccess(ast.PropertyAccess node) {
+FeatureVector featuresFromPropertyAccess(ast.PropertyAccess node) {
   var realTarget = node.realTarget;
   var completion = node.propertyName;
 
   if (realTarget != null) {
     var invocation = extractFeaturesForTarget(realTarget, node);
-    invocation.putIfAbsent(COMPLETION_KEY_NAME, () => "$completion");
+    invocation.completion = completion;
     return invocation;
   }
 
   return null;
 }
 
-Map featuresFromMethodInvocation(ast.MethodInvocation node) {
+FeatureVector featuresFromMethodInvocation(ast.MethodInvocation node) {
   var realTarget = node.realTarget;
   var completion = node.methodName;
 
   if (realTarget != null) {
     var invocation = extractFeaturesForTarget(realTarget, node);
-    invocation.putIfAbsent(COMPLETION_KEY_NAME, () => "$completion");
+    invocation.completion = completion;
     return invocation;
   }
 

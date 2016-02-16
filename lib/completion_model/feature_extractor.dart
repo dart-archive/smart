@@ -10,6 +10,7 @@ import 'package:sintr_common/logging_utils.dart' as log;
 
 import '../analysis_utils/analysis_utils.dart' as analysis_utils;
 import 'ast_extractors.dart' as extractors;
+import 'feature_vector.dart';
 
 
 // TODO(luekchurch): Refactor this so it shares an implementation with the
@@ -21,7 +22,7 @@ class Analysis {
     JavaSystemIO.setProperty("com.google.dart.sdk", sdkPath);
   }
 
-  List<Map> analyzeSpecificFile(String path) {
+  List<FeatureVector> analyzeSpecificFile(String path) {
     log.trace("analyzeSpecificFile: $path");
     sw = new Stopwatch()..start();
 
@@ -40,26 +41,23 @@ class Analysis {
 }
 
 class FeatureExtractor extends GeneralizingAstVisitor {
-  var features = [];
+  List<FeatureVector> features = [];
 
   @override
   visitPrefixedIdentifier(PrefixedIdentifier node) {
-    Map featuresMap = extractors.featuresFromPrefixedIdentifier(node);
-    features.add(featuresMap);
+    features.add(extractors.featuresFromPrefixedIdentifier(node));
     return super.visitNode(node);
   }
 
   @override
   visitPropertyAccess(PropertyAccess node) {
-    Map featuresMap = extractors.featuresFromPropertyAccess(node);
-    features.add(featuresMap);
+    features.add(extractors.featuresFromPropertyAccess(node));
     return super.visitNode(node);
   }
 
   @override
   visitMethodInvocation(MethodInvocation node) {
-    Map featuresMap = extractors.featuresFromMethodInvocation(node);
-    features.add(featuresMap);
+    features.add(extractors.featuresFromMethodInvocation(node));
     return super.visitNode(node);
   }
 }
