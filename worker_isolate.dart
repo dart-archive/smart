@@ -18,7 +18,6 @@ import 'package:sintr_common/logging_utils.dart' as log;
 import 'package:smart/completion_model/analyse_path.dart' as completion_model;
 import 'package:smart/discovery_model/analyse_path.dart' as discovery_model;
 
-
 const PROJECT_NAME = "liftoff-dev";
 const PATH_NAME = "data_working";
 
@@ -100,15 +99,14 @@ Future processFile(AuthClient client, String projectName, String bucketName,
       // Pub files need to be ungziped manually
       log.info("Running ungzip");
       ProcessResult gzipResult = await Process.run("gzip", ['-d', f.path]);
-      log.info(
-          "Ungzip finished, "
+      log.info("Ungzip finished, "
           "stdout:\n${gzipResult.stdout}\nstderr:${gzipResult.stderr}");
 
       String decompressedPath = f.path.substring(0, f.path.length - 3);
 
       log.info("Running untar");
-      ProcessResult result = await Process.run(
-          "tar", ['xvf', decompressedPath, '-C', workingDirectory.path]);
+      ProcessResult result = await Process
+          .run("tar", ['xvf', decompressedPath, '-C', workingDirectory.path]);
       log.info(
           "Untar finished, stdout:\n${result.stdout}\nstderr:${result.stderr}");
       new File(decompressedPath).deleteSync();
@@ -126,8 +124,10 @@ Future processFile(AuthClient client, String projectName, String bucketName,
 
   log.info("About to analyse folder: ${workingDirectory.path}");
 
-  var completionResults = await completion_model.analyseFolder(workingDirectory.path);
-  var discoveryResults = await discovery_model.analyseFolder(workingDirectory.path);
+  var completionResults =
+      await completion_model.analyseFolder(workingDirectory.path);
+  var discoveryResults =
+      await discovery_model.analyseFolder(workingDirectory.path);
 
   var results = {};
   for (var fileKey in completionResults.keys) {
