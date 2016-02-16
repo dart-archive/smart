@@ -5,11 +5,11 @@
 # Halt on the first error
 set -e
 
-# echo "Delete logs"
-gsutil -m rm gs://liftoff-dev-worker-logs/*
+echo "Delete logs"
+gsutil -m rm gs://liftoff-dev-worker-logs/* &
 
 echo "Deploying Client code"
 ./tool/sintr/upload_src.sh
 
 echo "Creating tasks"
-dart tool/sintr/create_tasks.dart
+dart tool/sintr/create_tasks.dart liftoff-dev-datasources-github

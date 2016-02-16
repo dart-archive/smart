@@ -48,5 +48,5 @@ main(List<String> args) async {
 
   await task_utils.createTasks(jobName, inputDataBucket, objectPaths,
       "liftoff-dev-results", "liftoff-dev-source",
-      incremental: true);
+      incremental: false);
 }
