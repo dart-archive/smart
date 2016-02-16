@@ -1,4 +1,4 @@
-// Copyright (c) 2015, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2016, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -13,10 +13,13 @@ import 'dart:io' as io;
 import 'dart:async';
 import 'feature_extractor.dart' as extractor;
 import 'package:sintr_common/logging_utils.dart' as log;
+import 'feature_vector.dart';
 
 String pathToSdk;
 
-Future<Map> analyseFolder(String path) async {
+// FileName -> Feature group -> Feature Vectors
+Future<Map<String, Map<String, List<String>>>>
+  analyseFolder(String path) async {
   log.trace("analyseFolder $path");
 
   pathToSdk = cli_util.getSdkDir().path;
@@ -24,7 +27,8 @@ Future<Map> analyseFolder(String path) async {
 
   extractor.Analysis analysis = new extractor.Analysis(pathToSdk);
 
-  var fileMap = {};
+  Map<String, Map<String, List<String>>> fileMap = {};
+
   var inDir = new io.Directory.fromUri(new Uri.file(path));
   for (var f in inDir.listSync(recursive: true, followLinks: false)) {
     if (f is io.File) {
@@ -37,12 +41,20 @@ Future<Map> analyseFolder(String path) async {
 
           log.trace("Analysing: ${f.path}");
 
-          var features = analysis.analyzeSpecificFile(f.path);
-          Map resultsMap = {"features": features};
+          List<FeatureVector> features = analysis.analyzeSpecificFile(f.path);
+
+          // Unpack the feature vectors into JSON strings
+          List<String> jsonCodedFeatures = features
+            .where((f) => f != null) // Contexts not supported return null
+            .map((f) => f.toJsonString()).toList();
+          Map<String, List<String>> resultsMap = {"completion_features": jsonCodedFeatures};
+
+          print (resultsMap);
+
           fileMap[f.path] = resultsMap;
         }
       } catch (e, st) {
-        log.trace("ERR $e $st");
+        log.trace("ERR $e\n$st\n");
       }
     }
   }
