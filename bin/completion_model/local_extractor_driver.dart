@@ -7,7 +7,7 @@ import 'dart:io' as io;
 import 'package:sintr_common/logging_utils.dart' as log;
 
 
-main(List<String> args) {
+main(List<String> args) async {
   log.setupLogging();
 
   if (args.length != 1) {
@@ -16,7 +16,7 @@ main(List<String> args) {
     io.exit(1);
   }
 
-  var result = completion_model.analyseFolder(args[0]);
+  var result = await completion_model.analyseFolder(args[0]);
   print (result);
 
 }

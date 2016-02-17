@@ -136,7 +136,10 @@ class FeatureVector {
 
   // TODO: Use fully qualified type name?
   String get targetType => "$_targetType";
+  set targetType(String s) { this._targetType = s; }
+
   String get completion => "$_completion";
+  set completion(String s) { this._completion = s; }
 
   String toJsonString() {
     var obj = {
