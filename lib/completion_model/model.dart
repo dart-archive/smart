@@ -128,4 +128,6 @@ class CompletionResult {
 
   // Optional aditional structure that is included in diagnostics mode
   Map<String, num> featureValues = {};
+
+  String toString() => "$completion: $score";
 }
