@@ -45,6 +45,7 @@ const IN_DECLARATION_WITH_IS_NAME = "InDeclarationWithIs";
 // Non-binary features
 const ASSIGNMENT_LHS_STATIC = "assigmmentLHSStaticType";
 
+
 /// Storage class for a statically defined set of features, either of binary or
 /// string types
 class FeatureVector {
@@ -86,10 +87,34 @@ class FeatureVector {
     IN_DECLARATION_WITH_IS_NAME,
   ];
 
+
+
   Map<String, String> stringFeatureValues = {};
+
+  static const List<String> stringFeatureNames = const <String>[
+    ASSIGNMENT_LHS_STATIC
+  ];
 
   FeatureVector() {
     binaryFeatureValues = new List(binaryFeatureNames.length);
+  }
+
+  static getFeatureNameFromIndex(int index) {
+    if (index < binaryFeatureNames.length) {
+      return binaryFeatureNames[index];
+    } else {
+      return stringFeatureNames[index - binaryFeatureNames.length];
+    }
+  }
+
+  dynamic getValueFromIndex(int index) {
+    if (index < binaryFeatureNames.length) {
+      return binaryFeatureValues[index];
+    } else {
+      return stringFeatureValues[
+        stringFeatureNames[index - binaryFeatureNames.length]
+        ];
+    }
   }
 
   /// Get the value for the feature or null if the feature isn't defined
@@ -101,12 +126,16 @@ class FeatureVector {
 
   // TODO: Replace this with a compound iterator to eliminate the
   // copy cost
-  Iterable<String> get allFeatureNames {
+  static Iterable<String> get allFeatureNames {
     List<String> accumulator = <String>[];
     accumulator.addAll(binaryFeatureNames);
-    accumulator.addAll(stringFeatureValues.keys);
+    accumulator.addAll(stringFeatureNames);
 
     return accumulator;
+  }
+
+  static int get featureCount {
+    return binaryFeatureNames.length + stringFeatureNames.length;
   }
 
   setValue(String name, dynamic value) {
@@ -190,6 +219,21 @@ class FeatureValueDistribution {
     setFeatureValueCount(featureName, value, currentValue + 1);
   }
 
+  int getTotalCountForFeatureIndex(int featureIndex) {
+    if (featureIndex < FeatureVector.binaryFeatureNames.length) {
+      int valueIndex = featureIndex * 2;
+      int count = _binaryFeatureCount[valueIndex] // Value for false
+        + _binaryFeatureCount[valueIndex+1];      // Value for true
+      return count;
+    } else {
+      var featureValuesMap = _featuresCountMap[
+        FeatureVector.stringFeatureNames[featureIndex - FeatureVector.binaryFeatureNames.length]];
+      if (featureValuesMap == null) return 0;
+
+      return featureValuesMap.values.fold(0, (a, b) => a + b);
+    }
+  }
+
   int getTotalCountForFeature(String featureName) {
     int featureIndex = FeatureVector.binaryFeatureNames.indexOf(featureName);
     if (featureIndex != -1) {
@@ -202,6 +246,21 @@ class FeatureValueDistribution {
     if (featureValuesMap == null) return 0;
 
     return featureValuesMap.values.fold(0, (a, b) => a + b);
+  }
+
+
+  int getValueCountForFeatureIndex(int featureIndex, dynamic value) {
+    if (featureIndex < FeatureVector.binaryFeatureNames.length) {
+      // This was a binary feature, return value for false, second for true
+      int valueIndex = featureIndex * 2 + (value as bool ? 1 : 0);
+      return _binaryFeatureCount[valueIndex];
+    } else {
+      var featureValuesMap = _featuresCountMap[
+        FeatureVector.stringFeatureNames[featureIndex - FeatureVector.binaryFeatureNames.length]];
+      if (featureValuesMap == null) return 0;
+
+      return featureValuesMap["$value"];
+    }
   }
 
   int getFeatureValueCount(String featureName, dynamic value) {
