@@ -16,6 +16,7 @@ dependencies:
   logging: "^0.11.0"
   cli_util: "^0.0.1"
   crypto: "^0.9.1"
+  trotter: "^0.8.1"
 
 dev_dependencies:
   sintr_common:
