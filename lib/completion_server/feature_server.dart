@@ -47,7 +47,7 @@ class FeatureServer {
       .putIfAbsent(vector.targetType, () => {})
       .putIfAbsent(vector.completion, () => new FeatureValueDistribution());
 
-    for (var featureName in vector.allFeatureNames) {
+    for (var featureName in FeatureVector.allFeatureNames) {
       distribution.incrementFeatureValueCount(
         featureName, vector.getValue(featureName));
     }

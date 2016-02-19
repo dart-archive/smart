@@ -19,9 +19,11 @@ class Model {
   num smoothingFactor;
   FeatureServer server;
   log.Logger _logger;
+  List<String> skippedFeatureNames = [];
 
   Model(this.server,
-      [this.modelSwitchThreshold = 3, this.smoothingFactor = 0.0000001]) {
+      [this.modelSwitchThreshold = 3, this.smoothingFactor = 0.0000001,
+        this.skippedFeatureNames]) {
     _logger = new log.Logger("smart.completion_model.model");
     log_client.bindLogServer(_logger);
   }
@@ -76,15 +78,19 @@ class Model {
       var featureDistribution = completionFeatureDistribution[completion];
 
       // Compute probabilities for each of the features
-      for (var featureName in vector.allFeatureNames) {
+      // for (var featureName in vector.allFeatureNames) {
+      for (int index = 0; index < FeatureVector.featureCount; index++) {
+        String featureName = FeatureVector.getFeatureNameFromIndex(index);
+        if (skippedFeatureNames.contains(featureName)) continue;
+
         // feature value from the completion request
-        var featureValue = vector.getValue(featureName);
+        var featureValue = vector.getValueFromIndex(index);
+
         int totalCountForFeature =
-            featureDistribution.getTotalCountForFeature(featureName);
+            featureDistribution.getTotalCountForFeatureIndex(index);
 
         int countForFeatureValue =
-            featureDistribution.getFeatureValueCount(featureName, featureValue);
-
+            featureDistribution.getValueCountForFeatureIndex(index, featureValue);
         if (countForFeatureValue == null) countForFeatureValue = 0;
 
         num smoothedCount = countForFeatureValue + smoothingFactor;
