@@ -1,5 +1,4 @@
 name: smart
-version: 0.0.1
 description: A library for data driven analysis of Dart.
 author: Dart Team <misc@dartlang.org>
 homepage: https://github.com/dart-lang/smart
